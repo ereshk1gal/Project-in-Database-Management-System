@@ -1,0 +1,1415 @@
+import tkinter as tk
+from tkinter import ttk
+from tkinter import *
+import tkinter.messagebox
+import tkinter.messagebox as messagebox
+import mysql.connector as mysql
+
+
+class Windows(tk.Tk):
+    def show_frame(self, cont):
+        frame = self.frames[cont]
+        frame.tkraise()
+
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+        self.wm_title("Event Management System")
+
+        main_frame = tk.Frame(width=1280, height=720, bg="#322e2f")
+        main_frame.grid()
+
+        self.frames = {}
+        for F in (MainPage, AdminPage, GuestViewScreen, GuestReqPage, AdminReqPage):
+            frame = F(main_frame, self)
+
+            self.frames[F] = frame
+            frame.grid(row=0, column=0)
+
+        self.show_frame(MainPage)
+
+
+class MainPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+        main_frame = tk.Frame(self, width=1280, height=720, bg="#322e2f")
+        main_frame.grid()
+
+        left_frame = tk.Frame(
+            main_frame,
+            width=480,
+            height=720,
+            bg="#415ccc"
+        )
+        left_frame.grid(row=0, column=0)
+
+        right_frame = tk.Frame(
+            main_frame,
+            width=880,
+            height=720,
+            bg="#322e2f"
+        )
+        right_frame.grid(row=0, column=1)
+
+        left_title_frame = tk.Frame(
+            left_frame,
+            width=480,
+            height=720,
+            bg="#415ccc"
+        )
+        left_title_frame.grid(row=1, column=0)
+
+        right_title_frame = tk.Frame(
+            right_frame,
+            width=880,
+            height=720,
+            bg="#322e2f"
+        )
+        right_title_frame.grid(row=1, column=0)
+
+        user_log = tk.Frame(
+            right_frame,
+            width=880,
+            height=140,
+            bg="#322e2f"
+        )
+        user_log.grid(row=2, column=0, pady=20)
+
+        button_frame = tk.Frame(
+            right_frame,
+            pady=60,
+            width=240,
+            height=140,
+            bg="#322e2f"
+        )
+        button_frame.grid(row=3, column=0)
+
+        #SPACER
+        blank_space_frame = tk.Frame(
+            left_frame,
+            width=880,
+            height=270,
+            bg="#415ccc"
+        )
+        blank_space_frame.grid(row=0, column=0)
+
+        blank_space_frame = tk.Frame(
+            left_frame,
+            width=880,
+            height=470,
+            bg="#415ccc"
+        )
+        blank_space_frame.grid(row=2, column=0)
+
+        blank_space_frame = tk.Frame(
+            right_frame,
+            width=466,
+            height=160,
+            bg="#322e2f"
+        )
+        blank_space_frame.grid(row=0, column=0)
+
+        blank_space_frame = tk.Frame(
+            right_frame,
+            width=466,
+            height=160,
+            bg="#322e2f"
+        )
+        blank_space_frame.grid(row=4, column=0)
+
+        # LABEL
+        lbl_title = tk.Label(
+            left_title_frame,
+            font=('Helvetica', 30, 'bold'),
+            text="EVENT MANAGEMENT SYSTEM"
+        )
+        lbl_title.grid(row=0, column=0)
+
+        lbl_admin = tk.Label(
+            right_title_frame,
+            font=('Helvetica', 20, 'bold'),
+            text="Log-in"
+        )
+        lbl_admin.grid(row=0, column=0)
+
+        # USER LOG LABEL/ENTRY
+        u_name = tk.Label(
+            user_log,
+            text="USERNAME",
+            bg="white"
+        )
+        u_name.grid(row=0, column=0)
+        u_name_entry = tk.Entry(
+            user_log,
+            font=('Helvetica', 16),
+            width=19
+        )
+        u_name_entry.grid(row=0, column=1, pady=10, padx=10)
+
+        u_pass = tk.Label(
+            user_log,
+            text="PASSWORD",
+            bg="white")
+        u_pass.grid(row=1, column=0)
+        u_pass_entry = tk.Entry(
+            user_log,
+            font=('Helvetica', 16),
+            width=19,
+            show="*")
+        u_pass_entry.grid(row=1, column=1, pady=10, padx=10)
+
+        #BUTTONS
+        def check_user_log():
+            username = "admin"
+            password = "admin"
+
+            if u_name_entry.get() != username and u_pass_entry.get() != password:
+                tk.messagebox.showerror(title="Invalid account", message="TRY AGAIN")
+
+            elif u_name_entry.get() == username and u_pass_entry.get() == password:
+                controller.show_frame(AdminPage)
+
+        switch_window_to_admin_page = tk.Button(
+            button_frame,
+            text="Login",
+            command=check_user_log
+        )
+        switch_window_to_admin_page.grid(row=0, column=0, pady=20)
+
+        switch_window_to_guest_view_screen = tk.Button(
+            button_frame,
+            text="Guest View",
+            command=lambda: controller.show_frame(GuestViewScreen)
+        )
+        switch_window_to_guest_view_screen.grid(row=1, column=0, pady=20)
+
+
+class AdminPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+        #VARIABLES
+        client_id = tk.StringVar()
+        client_name = tk.StringVar()
+        client_phone_no = tk.StringVar()
+
+        event_id = tk.StringVar()
+        event_name = tk.StringVar()
+        event_type_id = tk.StringVar()
+        event_location = tk.StringVar()
+        event_start_date = tk.StringVar()
+        event_end_date = tk.StringVar()
+
+        main_frame = tk.Frame(
+            self,
+            width=1280,
+            height=720,
+            bg="#322e2f"
+        )
+        main_frame.grid()
+
+        title_frame = tk.Frame(
+            main_frame,
+            width=1280,
+            height=720,
+            bg="#322e2f"
+        )
+        title_frame.grid(row=0, column=1, pady=10)
+
+        left_frame = tk.Frame(
+            main_frame,
+            width=1280,
+            height=720,
+            bg="#322e2f"
+        )
+        left_frame.grid(row=1, column=0, pady=20, padx=10)
+
+        right_frame = tk.Frame(
+            main_frame,
+            width=1280,
+            height=720,
+            bg="#322e2f"
+        )
+        right_frame.grid(row=1, column=1, pady=20, padx=15)
+
+        client_details_frame = tk.Frame(
+            left_frame,
+            width=880,
+            height=140,
+            bg="#322e2f"
+        )
+        client_details_frame.grid(row=1, column=0, padx=40)
+
+        treeview_frame = tk.Frame(
+            right_frame,
+            width=240,
+            height=720,
+            padx=6,
+            bg="#322e2f"
+        )
+        treeview_frame.grid(row=1, column=1, pady=20)
+
+        button_frame = tk.Frame(
+            left_frame,
+            pady=60,
+            width=240,
+            height=140,
+            bg="#322e2f"
+        )
+        button_frame.grid(row=3, column=0)
+
+        return_button_frame = tk.Frame(
+            left_frame,
+            bg="#322e2f"
+        )
+        return_button_frame.grid(row=4, column=0)
+
+        #LABEL
+        label = tk.Label(
+            title_frame,
+            bd=20,
+            font=('Helvetica', 30, 'bold'),
+            text="EVENT MANAGEMENT SYSTEM"
+        )
+        label.grid(row=0, column=0)
+
+        # CLIENT ENTRY BOX
+        lbl_client_details = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Client ID",
+            width=11
+        )
+        lbl_client_details.grid(row=0, column=0, sticky=tk.W, padx=5)
+        txt_client_id = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=client_id
+        )
+        txt_client_id.grid(row=0, column=1, pady=5, padx=5)
+
+        lbl_name = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Full Name",
+            width=11
+        )
+        lbl_name.grid(row=1, column=0, sticky=tk.W, padx=5)
+        txt_name = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=client_name
+        )
+        txt_name.grid(row=1, column=1, pady=5, padx=5)
+
+        lbl_phone_no = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Phone#",
+            width=11
+        )
+        lbl_phone_no.grid(row=2, column=0, sticky=tk.W, padx=5)
+        txt_phone_no = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=client_phone_no
+        )
+        txt_phone_no.grid(row=2, column=1, pady=5, padx=5)
+
+        # EVENT ENTRY BOX
+        lbl_event_id = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Event ID",
+            width=11
+        )
+        lbl_event_id.grid(row=4, column=0, sticky=tk.W, padx=5)
+        txt_event_id = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_id
+        )
+        txt_event_id.grid(row=4, column=1, pady=5, padx=5)
+
+        lbl_event_name = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Event Name",
+            width=11
+        )
+        lbl_event_name.grid(row=5, column=0, sticky=tk.W, padx=5)
+        txt_event_name = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_name
+        )
+        txt_event_name.grid(row=5, column=1, pady=5, padx=5)
+
+        lbl_event_type = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Event Type",
+            width=11
+        )
+        lbl_event_type.grid(row=6, column=0, padx=5, sticky=tk.W)
+        txt_event_type = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_type_id
+        )
+        txt_event_type.grid(row=6, column=1, pady=5, padx=5)
+
+        lbl_event_location = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Event Location",
+            width=11
+        )
+        lbl_event_location.grid(row=7, column=0, sticky=tk.W, padx=5)
+        txt_event_location = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_location
+        )
+        txt_event_location.grid(row=7, column=1, pady=5, padx=5)
+
+        event_start_date.set("YYYY-MM-DD")
+        lbl_event_start_date = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Event Start",
+            width=11
+        )
+        lbl_event_start_date.grid(row=8, column=0, sticky=tk.W, padx=5)
+        txt_event_start_date = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_start_date
+        )
+        txt_event_start_date.grid(row=8, column=1, pady=5, padx=5)
+
+        event_end_date.set("YYYY-MM-DD")
+        lbl_event_end_date = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 12),
+            text="Event End",
+            width=11
+        )
+        lbl_event_end_date.grid(row=9, column=0, sticky=tk.W, padx=5)
+        txt_event_end_date = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 12),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_end_date
+        )
+        txt_event_end_date.grid(row=9, column=1, pady=5, padx=5)
+
+        # FUNCTIONS
+
+        def display_record():
+            con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+            cursor = con.cursor()
+            cursor.execute(
+                "SELECT client_id, client_name, client_phone_no, t1.event_id, event_name, event_location, type_name, event_start_date, event_end_date "
+                "FROM event AS t1 "
+                "INNER JOIN event_type T2 ON t1.event_type_id=t2.event_type_id "
+                "INNER JOIN client t3 on t1.event_id=t3.event_id "
+                "ORDER BY client_id ASC")
+            result = cursor.fetchall()
+            if len(result) != 0:
+                self.show_records.delete(*self.show_records.get_children())
+                for row in result:
+                    self.show_records.insert('', END, values=row)
+                    con.commit()
+                con.close()
+
+        def ClientInfo(ev):
+            view_info = self.show_records.focus()
+            learner_data = self.show_records.item(view_info)
+            row = learner_data['values']
+
+            client_id.set(row[0])
+            client_name.set(row[1])
+            client_phone_no.set(row[2])
+            event_id.set(row[3])
+            event_name.set(row[4])
+            event_type_id.set(row[5])
+            event_location.set(row[6])
+            event_start_date.set(row[7])
+            event_end_date.set(row[8])
+
+        def combine_funcs(*funcs):
+            def inner_combined_func(*args, **kwargs):
+                for f in funcs:
+                    f(*args, **kwargs)
+
+            return inner_combined_func
+
+        def insert_client():
+            cid = client_id.get()
+            name = client_name.get()
+            phone = client_phone_no.get()
+            eid = event_id.get()
+
+            if client_id == "" or client_name == "" or client_phone_no == "":
+                messagebox.showinfo("Insert Status", "All Fields are required")
+            else:
+                con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+                cursor = con.cursor()
+                cursor.execute(
+                    "INSERT INTO client(client_id, client_name, client_phone_no, event_id) "
+                    "VALUES('" + cid + "','" + name + " ','" + phone + "', '" + eid + "')")
+                cursor.execute("COMMIT")
+
+                con.commit()
+                display_record()
+                con.close()
+
+        def insert_event():
+            eid = event_id.get()
+            eventName = event_name.get()
+            eventType = event_type_id.get()
+            eventLoc = event_location.get()
+            eventStartDate = event_start_date.get()
+            eventEndDate = event_end_date.get()
+
+            if client_id == "" or client_name == "" or client_phone_no == "":
+                messagebox.showinfo("Insert Status", "All Fields are required")
+            else:
+                con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+                cursor = con.cursor()
+                cursor.execute(
+                    "INSERT INTO event (event_id, event_name, event_type_id, event_location, event_start_date, event_end_date) "
+                    "VALUES ('" + eid + "', '" + eventName + "', '" + eventType + "', '" + eventLoc + "','" + eventStartDate + "', '" + eventEndDate + "')")
+                cursor.execute("COMMIT")
+
+                con.commit()
+                display_record()
+                con.close()
+
+        def delete():
+            id = client_id.get()
+            if id == "":
+                messagebox.showinfo("Delete Status", "ID is compulsory for delete")
+            else:
+                con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+                cursor = con.cursor()
+                cursor.execute(
+                    "DELETE FROM client "
+                    "WHERE client_id = '" + id + "'")
+                cursor.execute("COMMIT")
+
+                display_record()
+                con.close()
+
+        def update_client():
+            id = client_id.get()
+            name = client_name.get()
+            phone = client_phone_no.get()
+            eventID = event_id.get()
+
+            if id == "":
+                messagebox.showinfo("Update Status", "All Fields are required")
+            else:
+                con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+                cursor = con.cursor()
+                cursor.execute("UPDATE client "
+                               "SET "
+                               "client_name = '" + name + "', "
+                               "client_phone_no = '" + phone + "', "
+                               "event_id = '" + eventID + "' "
+                               "WHERE client_id = '" + id + "'"
+                               )
+                cursor.execute("COMMIT")
+
+                display_record()
+                con.close()
+
+        def update_event():
+            eventID = event_id.get()
+            eventName = event_name.get()
+            eventType = event_type_id.get()
+            eventLoc = event_location.get()
+            eventStartDate = event_start_date.get()
+            eventEndDate = event_end_date.get()
+
+            con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+            cursor = con.cursor()
+            cursor.execute("UPDATE event "
+                           "SET "
+                           "event_name = '" + eventName + "', "
+                           "event_type_id = '" + eventType + "', "
+                           "event_location = '" + eventLoc + "', "
+                           "event_start_date = '" + eventStartDate + "', "
+                           "event_end_date = '" + eventEndDate + "' "
+                           "WHERE event_id = '" + eventID + "'"
+                           )
+            cursor.execute("COMMIT")
+
+            display_record()
+            con.close()
+
+        #BUTTON
+        btn_add_client = Button(
+            button_frame,
+            pady=3,
+            padx=15,
+            font=('Helvetica', 10),
+            width=5,
+            height=2,
+            text="Add",
+            bg="white",
+            command=combine_funcs(insert_client, insert_event)
+        )
+        btn_add_client.grid(row=0, column=3, padx=5)
+
+        btn_update_event = Button(
+            button_frame,
+            pady=3,
+            padx=15,
+            font=('Helvetica', 10),
+            width=5,
+            height=2, text="Update", bg="white",
+            command=combine_funcs(update_client, update_event)
+        )
+        btn_update_event.grid(row=0, column=5, padx=5)
+
+        btn_delete_event = Button(
+            button_frame,
+            pady=3,
+            padx=15,
+            font=('Helvetica', 10),
+            width=5,
+            height=2,
+            text="Delete",
+            bg="white",
+            command=delete
+        )
+        btn_delete_event.grid(row=0, column=4, padx=5)
+
+        switch_window_to_MainPage = Button(
+            return_button_frame,
+            font=('Helvetica', 10),
+            width=15,
+            height=2,
+            text="Return to menu",
+            bg="white",
+            command=lambda: controller.show_frame(MainPage)
+        )
+        switch_window_to_MainPage.grid(row=1, column=0, padx=5)
+
+        switch_window_to_AdminReqPage = Button(
+            return_button_frame,
+            font=('Helvetica', 10),
+            width=15,
+            height=2,
+            text="Requests",
+            bg="white",
+            command=lambda: controller.show_frame(AdminReqPage)
+        )
+        switch_window_to_AdminReqPage.grid(row=1, column=1, padx=5)
+
+        # RECORDS
+        vertical_scroll = tk.Scrollbar(treeview_frame, orient=tk.VERTICAL)
+        self.show_records = ttk.Treeview(treeview_frame, height=30, columns=(
+            "client_id", "client_name", "client_phone_no", "event_id", "event_name",
+            "event_location", "type_name", "event_start_date", "event_end_date"),
+                                         yscrollcommand=vertical_scroll.set)
+        vertical_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.show_records.heading("client_id", text="CID")
+        self.show_records.heading("client_name", text="Client Name")
+        self.show_records.heading("client_phone_no", text="Phone#")
+        self.show_records.heading("event_id", text="EID")
+        self.show_records.heading("event_name", text="Event Name")
+        self.show_records.heading("event_location", text="Event Location")
+        self.show_records.heading("type_name", text="Event Type")
+        self.show_records.heading("event_start_date", text="Event Start")
+        self.show_records.heading("event_end_date", text="Event End")
+
+        self.show_records['show'] = 'headings'
+
+        self.show_records.column("client_id", width=35)
+        self.show_records.column("client_name", width=150)
+        self.show_records.column("client_phone_no", width=100)
+        self.show_records.column("event_id", width=40)
+        self.show_records.column("event_name", width=150)
+        self.show_records.column("event_location", width=150)
+        self.show_records.column("type_name", width=100)
+        self.show_records.column("event_start_date", width=100)
+        self.show_records.column("event_end_date", width=100)
+
+        self.show_records.pack(fill=tk.BOTH, expand=1)
+        self.show_records.bind("<ButtonRelease-1>", ClientInfo)
+        display_record()
+
+
+class GuestViewScreen(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+        client_id = tk.StringVar()
+        client_name = tk.StringVar()
+        client_phone_no = tk.StringVar()
+
+        event_id = tk.StringVar()
+        event_name = tk.StringVar()
+        event_type_id = tk.StringVar()
+        event_location = tk.StringVar()
+        event_start_date = tk.StringVar()
+        event_end_date = tk.StringVar()
+
+        main_frame = Frame(
+            self,
+            width=1280,
+            height=720,
+            pady=15,
+            padx=50,
+            bg='#322e2f'
+        )
+        main_frame.grid()
+
+        title_frame = tk.Frame(
+            main_frame,
+            width=1280,
+            height=50,
+            bg="#322e2f"
+        )
+        title_frame.grid(row=0, column=0)
+
+        search_client_id = Frame(
+            main_frame,
+            width=1280,
+            height=500,
+            padx=2,
+            bg='#322e2f'
+        )
+        search_client_id.grid(row=1, column=0)
+
+        client_information = Frame(
+            main_frame,
+            width=1280,
+            height=100,
+            padx=2,
+            bg='#322e2f'
+        )
+        client_information.grid(row=2, column=0)
+
+        treeview_frame = Frame(
+            main_frame,
+            width=1280,
+            height=400,
+            padx=2,
+            bg='#322e2f'
+        )
+        treeview_frame.grid(row=4, column=0)
+
+        return_button_frame = Frame(
+            main_frame,
+            width=1280,
+            height=50,
+            bg="#322e2f"
+        )
+        return_button_frame.grid(row=5, column=0)
+
+        #SPACER
+        blank_space_frame = tk.Frame(
+            main_frame,
+            width=1280,
+            height=10,
+            bg="#322e2f"
+        )
+        blank_space_frame.grid(row=3, column=0)
+        # TITLE LABEL
+        lbl_title = Label(
+            title_frame,
+            bg='white',
+            font=('Helvetica', 20, 'bold'),
+            text="EVENT MANAGEMENT SYSTEM"
+        )
+        lbl_title.grid(row=0, column=0)
+
+        # ENTRY BOX
+        lbl_search_client_id = Label(
+            search_client_id,
+            bg='white',
+            font=('Helvetica', 16),
+            text="Enter Client ID",
+            width=15
+        )
+        lbl_search_client_id.grid(row=0, column=0, pady=5, padx=5)
+        txt_search_client_id = Entry(
+            search_client_id,
+            font=('Helvetica', 16),
+            width=73,
+            justify=LEFT,
+            textvariable=client_id
+        )
+        txt_search_client_id.grid(row=0, column=1, pady=5, padx=5)
+
+        # CLIENT ENTRY BOX
+        lbl_name = Label(
+            client_information,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Full Name",
+            width=11
+        )
+        lbl_name.grid(row=0, column=0, pady=5, padx=5)
+        txt_name = Entry(
+            client_information,
+            font=('Helvetica', 16),
+            width=19,
+            justify=LEFT,
+            textvariable=client_name
+        )
+        txt_name.grid(row=0, column=1, pady=5, padx=5)
+
+        lbl_phone_no = Label(
+            client_information,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Phone#",
+            width=11
+        )
+        lbl_phone_no.grid(row=0, column=2, pady=5, padx=5)
+        txt_phone_no = Entry(
+            client_information,
+            font=('Helvetica', 16),
+            width=19,
+            justify=LEFT,
+            textvariable=client_phone_no
+        )
+        txt_phone_no.grid(row=0, column=3, pady=5, padx=5)
+
+        # EVENT ENTRY BOX
+        lbl_event_id = Label(
+            client_information,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event ID",
+            width=11
+        )
+        lbl_event_id.grid(row=0, column=4, pady=5, padx=5)
+        txt_event_id = Entry(
+            client_information,
+            font=('Helvetica', 16),
+            width=19,
+            justify=LEFT,
+            textvariable=event_id
+        )
+        txt_event_id.grid(row=0, column=5, pady=5, padx=5)
+
+        lbl_event_name = Label(
+            client_information,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event Name",
+            width=11
+        )
+        lbl_event_name.grid(row=1, column=0, pady=5, padx=5)
+        txt_event_name = Entry(
+            client_information,
+            font=('Helvetica', 16),
+            width=19,
+            justify=LEFT,
+            textvariable=event_name
+        )
+        txt_event_name.grid(row=1, column=1, pady=5, padx=5)
+
+        lbl_event_type = Label(
+            client_information,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event Type",
+            width=11)
+        lbl_event_type.grid(row=1, column=2, pady=5, padx=5)
+        txt_event_type = Entry(
+            client_information,
+            font=('Helvetica', 16),
+            width=19,
+            justify=LEFT,
+            textvariable=event_type_id
+        )
+        txt_event_type.grid(row=1, column=3, pady=5, padx=5)
+
+        lbl_event_location = Label(
+            client_information,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event Location",
+            width=11
+        )
+        lbl_event_location.grid(row=1, column=4, pady=5, padx=5)
+        txt_event_location = Entry(
+            client_information,
+            font=('Helvetica', 16),
+            width=19,
+            justify=LEFT,
+            textvariable=event_location
+        )
+        txt_event_location.grid(row=1, column=5, pady=5, padx=5)
+
+        lbl_event_start_date = Label(
+            client_information,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event Start",
+            width=11
+        )
+        lbl_event_start_date.grid(row=2, column=0, pady=5, padx=5)
+        txt_event_start_date = Entry(
+            client_information,
+            font=('Helvetica', 16),
+            width=19,
+            justify=LEFT,
+            textvariable=event_start_date
+        )
+        txt_event_start_date.grid(row=2, column=1, pady=5, padx=5)
+
+        lbl_event_end_date = Label(
+            client_information,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event End",
+            width=11
+        )
+        lbl_event_end_date.grid(row=2, column=2, pady=5, padx=5)
+        txt_event_end_date = Entry(
+            client_information,
+            font=('Helvetica', 16),
+            width=19,
+            justify=LEFT,
+            textvariable=event_end_date
+        )
+        txt_event_end_date.grid(row=2, column=3, pady=5, padx=5)
+
+        # FUNCTION
+        def display_record():
+            con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+            cursor = con.cursor()
+            cursor.execute(
+                "SELECT client_name, client_phone_no, t1.event_id, event_name, event_location, type_name, event_start_date, event_end_date "
+                "FROM event AS t1 "
+                "INNER JOIN event_type T2 ON t1.event_type_id=t2.event_type_id "
+                "INNER JOIN client t3 on t1.event_id=t3.event_id "
+                "ORDER BY client_id ASC")
+            result = cursor.fetchall()
+            if len(result) != 0:
+                show_records.delete(*show_records.get_children())
+                for row in result:
+                    show_records.insert('', END, values=row)
+                    con.commit()
+                con.close()
+
+        def ClientInfo(ev):
+            view_info = show_records.focus()
+            learner_data = show_records.item(view_info)
+            row = learner_data['values']
+
+            client_name.set(row[0])
+            client_phone_no.set(row[1])
+            event_id.set(row[2])
+            event_name.set(row[3])
+            event_type_id.set(row[4])
+            event_location.set(row[5])
+            event_start_date.set(row[6])
+            event_end_date.set(row[7])
+
+        def search_info():
+            con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+            cursor = con.cursor()
+            cursor.execute(
+                "SELECT client_name, client_phone_no, t1.event_id, event_name, event_location, type_name, event_start_date, event_end_date "
+                "FROM event AS t1 "
+                "INNER JOIN event_type T2 ON t1.event_type_id=t2.event_type_id "
+                "INNER JOIN client t3 on t1.event_id=t3.event_id "
+                "WHERE client_id = '" + client_id.get() + "'")
+            result = cursor.fetchall()
+            if len(result) != 0:
+                show_records.delete(*show_records.get_children())
+                for row in result:
+                    show_records.insert('', END, values=row)
+                    con.commit()
+                con.close()
+
+
+        # BUTTON
+        btn_search_client = Button(
+            search_client_id,
+            padx=15,
+            font=('Helvetica', 12),
+            width=5,
+            height=1,
+            text="SEARCH",
+            bg="white",
+            command=search_info
+        )
+        btn_search_client.grid(row=0, column=2)
+
+        btn_request_event = ttk.Button(
+            return_button_frame,
+            text="Request Event",
+            command=lambda: controller.show_frame(GuestReqPage)
+        )
+        btn_request_event.grid(row=0, column=1, pady=10, padx=10)
+
+        switch_window_button = ttk.Button(
+            return_button_frame,
+            text="Return to menu",
+            command=lambda: controller.show_frame(MainPage)
+        )
+        switch_window_button.grid(row=0, column=0, pady=10, padx=10)
+
+        # TREEVIEW
+        vertical_scroll = Scrollbar(treeview_frame, orient=VERTICAL)
+        show_records = ttk.Treeview(
+            treeview_frame,
+            height=25,
+            columns=("client_name", "client_phone_no", "event_id", "event_name",
+                     "event_location", "type_name", "event_start_date", "event_end_date"),
+            yscrollcommand=vertical_scroll.set)
+        vertical_scroll.pack(side=RIGHT, fill=Y)
+
+        show_records.heading("client_name", text="Client Name")
+        show_records.heading("client_phone_no", text="Phone#")
+        show_records.heading("event_id", text="EID")
+        show_records.heading("event_name", text="Event Name")
+        show_records.heading("event_location", text="Event Location")
+        show_records.heading("type_name", text="Event Type")
+        show_records.heading("event_start_date", text="Event Start")
+        show_records.heading("event_end_date", text="Event End")
+
+        show_records['show'] = 'headings'
+
+        show_records.column("client_name", width=185)
+        show_records.column("client_phone_no", width=135)
+        show_records.column("event_id", width=75)
+        show_records.column("event_name", width=185)
+        show_records.column("event_location", width=185)
+        show_records.column("type_name", width=135)
+        show_records.column("event_start_date", width=135)
+        show_records.column("event_end_date", width=135)
+
+        show_records.pack(fill=BOTH, expand=1)
+        show_records.bind("<ButtonRelease-1>", ClientInfo)
+        display_record()
+
+
+class GuestReqPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+        # VARIABLES
+        client_name = tk.StringVar()
+        client_phone_no = tk.StringVar()
+        event_name = tk.StringVar()
+        event_type = tk.StringVar()
+        event_location = tk.StringVar()
+        event_start_date = tk.StringVar()
+        event_end_date = tk.StringVar()
+
+        #FRAMES
+        main_frame = tk.Frame(self, width=1280, height=720, bg="#322e2f")
+        main_frame.grid()
+
+        left_frame = tk.Frame(
+            main_frame,
+            width=480,
+            height=720,
+            bg="#415ccc"
+        )
+        left_frame.grid(row=0, column=0)
+
+        right_frame = tk.Frame(
+            main_frame,
+            width=880,
+            height=720,
+            bg="#322e2f"
+        )
+        right_frame.grid(row=0, column=1)
+
+        left_title_frame = tk.Frame(
+            left_frame,
+            width=480,
+            height=720,
+            bg="#415ccc"
+        )
+        left_title_frame.grid(row=1, column=0)
+
+        right_title_frame = tk.Frame(
+            right_frame,
+            width=880,
+            height=720,
+            bg="#322e2f"
+        )
+        right_title_frame.grid(row=1, column=0)
+
+        client_details_frame = tk.Frame(
+            right_frame,
+            width=880,
+            height=240,
+            bg="#322e2f"
+        )
+        client_details_frame.grid(row=2, column=0)
+
+        button_frame = tk.Frame(
+            right_frame,
+            pady=60,
+            width=240,
+            height=140,
+            bg="#322e2f"
+        )
+        button_frame.grid(row=3, column=0)
+
+        # SPACER
+        blank_space_frame = tk.Frame(
+            left_frame,
+            width=880,
+            height=270,
+            bg="#415ccc"
+        )
+        blank_space_frame.grid(row=0, column=0, padx=10)
+
+        blank_space_frame = tk.Frame(
+            left_frame,
+            width=880,
+            height=470,
+            bg="#415ccc"
+        )
+        blank_space_frame.grid(row=2, column=0, pady=10, padx=10)
+
+        blank_space_frame = tk.Frame(
+            right_frame,
+            width=466,
+            height=60,
+            bg="#322e2f"
+        )
+        blank_space_frame.grid(row=0, column=0, pady=10, padx=10)
+
+        blank_space_frame = tk.Frame(
+            right_frame,
+            width=466,
+            height=60,
+            bg="#322e2f"
+        )
+        blank_space_frame.grid(row=4, column=0, pady=10, padx=10)
+
+        # LABEL
+        lbl_title = tk.Label(
+            left_title_frame,
+            font=('Helvetica', 30, 'bold'),
+            text="EVENT MANAGEMENT SYSTEM"
+        )
+        lbl_title.grid(row=0, column=0)
+
+        lbl_request_title = tk.Label(
+            right_title_frame,
+            font=('Helvetica', 20, 'bold'),
+            text="Request Event"
+        )
+        lbl_request_title.grid(row=0, column=0, pady=5)
+
+        # CLIENT ENTRY BOX
+        lbl_name = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Full Name",
+            width=11
+        )
+        lbl_name.grid(row=0, column=0, sticky=tk.W, pady=5, padx=10)
+        txt_name = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 16),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=client_name
+        )
+        txt_name.grid(row=0, column=1, pady=5, padx=10)
+
+        lbl_phone_no = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Phone#",
+            width=11
+        )
+        lbl_phone_no.grid(row=1, column=0, pady=5, padx=10)
+        txt_phone_no = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 16),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=client_phone_no
+        )
+        txt_phone_no.grid(row=1, column=1, pady=5, padx=10)
+
+        # EVENT ENTRY BOX
+        lbl_event_name = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event Name",
+            width=11
+        )
+        lbl_event_name.grid(row=2, column=0, pady=5, padx=10)
+        txt_event_name = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 16),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_name
+        )
+        txt_event_name.grid(row=2, column=1, pady=5, padx=10)
+
+        lbl_event_type = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event Type",
+            width=11
+        )
+        lbl_event_type.grid(row=3, column=0, pady=5, padx=10)
+        txt_event_type = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 16),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_type
+        )
+        txt_event_type.grid(row=3, column=1, pady=5, padx=10)
+
+        lbl_event_location = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event Location",
+            width=11
+        )
+        lbl_event_location.grid(row=4, column=0, pady=5, padx=10)
+        txt_event_location = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 16),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_location
+        )
+        txt_event_location.grid(row=4, column=1, pady=5, padx=10)
+
+        event_start_date.set("YYYY-MM-DD")
+        lbl_event_start_date = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event Start",
+            width=11
+        )
+        lbl_event_start_date.grid(row=5, column=0, pady=5, padx=10)
+        txt_event_start_date = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 16),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_start_date
+        )
+        txt_event_start_date.grid(row=5, column=1, pady=5, padx=10)
+
+        event_end_date.set("YYYY-MM-DD")
+        lbl_event_end_date = tk.Label(
+            client_details_frame,
+            bg="white",
+            font=('Helvetica', 16),
+            text="Event End",
+            width=11
+        )
+        lbl_event_end_date.grid(row=6, column=0, pady=5, padx=10)
+        txt_event_end_date = tk.Entry(
+            client_details_frame,
+            font=('Helvetica', 16),
+            width=19,
+            justify=tk.LEFT,
+            textvariable=event_end_date
+        )
+        txt_event_end_date.grid(row=6, column=1, pady=5, padx=10)
+
+        # FUNCTIONS
+        def add_event():
+            name = client_name.get()
+            phone = client_phone_no.get()
+            eventName = event_name.get()
+            eventType = event_type.get()
+            eventLoc = event_location.get()
+            eventStartDate = event_start_date.get()
+            eventEndDate = event_end_date.get()
+
+            con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+            cursor = con.cursor()
+            cursor.execute(
+                "INSERT INTO requests(name, phone, event_name, event_type, event_location, event_start_date, event_end_date) "
+                "VALUES('" + name + " ','" + phone + "', '" + eventName + "', '" + eventType + "', '" + eventLoc + "','" + eventStartDate + "', '" + eventEndDate + "')")
+            cursor.execute("COMMIT")
+
+            con.commit()
+            con.close()
+
+        # BUTTONS
+        add_event_requested = tk.Button(
+            button_frame,
+            text="Add",
+            command=add_event
+        )
+        add_event_requested.grid(row=0, column=0, pady=5, padx=10)
+
+        switch_window_to_GuestViewScreen = tk.Button(
+            button_frame,
+            text="Guest View",
+            command=lambda: controller.show_frame(GuestViewScreen)
+        )
+        switch_window_to_GuestViewScreen.grid(row=1, column=0, pady=5)
+
+
+class AdminReqPage(tk.Frame):
+    def __init__(self, parent, controller):
+        tk.Frame.__init__(self, parent)
+
+        main_frame = Frame(
+            self,
+            width=1280,
+            height=720,
+            pady=15,
+            padx=50,
+            bg='#322e2f'
+        )
+        main_frame.grid()
+
+        title_frame = tk.Frame(
+            main_frame,
+            width=1280,
+            height=50,
+            bg="#322e2f"
+        )
+        title_frame.grid(row=0, column=0)
+
+        client_information = Frame(
+            main_frame,
+            width=1280,
+            height=100,
+            padx=2,
+            bg='#322e2f'
+        )
+        client_information.grid(row=2, column=0)
+
+        treeview_frame = Frame(
+            main_frame,
+            width=1280,
+            height=400,
+            padx=2,
+            bg='#322e2f'
+        )
+        treeview_frame.grid(row=4, column=0)
+
+        return_button_frame = Frame(
+            main_frame,
+            width=1280,
+            height=50,
+            bg="#322e2f"
+        )
+        return_button_frame.grid(row=5, column=0)
+
+        # TITLE LABEL
+        lbl_title = Label(
+            title_frame,
+            bg='white',
+            font=('Helvetica', 20, 'bold'),
+            text="REQUESTS"
+        )
+        lbl_title.grid(row=0, column=0)
+
+        def display_record():
+            con = mysql.connect(host="localhost", user="root", password="", database="projectdb")
+            cursor = con.cursor()
+            cursor.execute(
+                "SELECT * FROM requests")
+            result = cursor.fetchall()
+            if len(result) != 0:
+                show_records.delete(*show_records.get_children())
+                for row in result:
+                    show_records.insert('', END, values=row)
+                    con.commit()
+                con.close()
+
+        # TREEVIEW
+        vertical_scroll = Scrollbar(treeview_frame, orient=VERTICAL)
+        show_records = ttk.Treeview(
+            treeview_frame,
+            height=25,
+            columns=("client_name", "client_phone_no", "event_name",
+                     "type_name", "event_location", "event_start_date", "event_end_date"),
+            yscrollcommand=vertical_scroll.set)
+        vertical_scroll.pack(side=RIGHT, fill=Y)
+
+        show_records.heading("client_name", text="Client Name")
+        show_records.heading("client_phone_no", text="Phone#")
+        show_records.heading("event_name", text="Event Name")
+        show_records.heading("type_name", text="Event Type")
+        show_records.heading("event_location", text="Event Location")
+        show_records.heading("event_start_date", text="Event Start")
+        show_records.heading("event_end_date", text="Event End")
+
+        show_records['show'] = 'headings'
+
+        show_records.column("client_name", width=185)
+        show_records.column("client_phone_no", width=135)
+        show_records.column("event_name", width=185)
+        show_records.column("type_name", width=135)
+        show_records.column("event_location", width=185)
+        show_records.column("event_start_date", width=135)
+        show_records.column("event_end_date", width=135)
+
+        show_records.pack(fill=BOTH, expand=1)
+        show_records.bind("<ButtonRelease-1>")
+        display_record()
+
+        refresh_record_button = ttk.Button(
+            return_button_frame,
+            text="Refresh",
+            command=display_record
+        )
+        refresh_record_button.grid(row=0, column=1, pady=10, padx=10)
+        switch_window_button = ttk.Button(
+            return_button_frame,
+            text="Return to Admin Page",
+            command=lambda: controller.show_frame(AdminPage)
+        )
+        switch_window_button.grid(row=0, column=0, pady=10, padx=10)
+
+
+if __name__ == "__main__":
+    projectdb = Windows()
+    projectdb.mainloop()
